@@ -69,6 +69,7 @@ subnet-associations ke kantor-private-1, kantor-private-2, kantor-private-3
 - ✅ Tampil hostname & IP server di header
 - ✅ Search & filter berdasarkan kategori
 - ✅ Responsive UI
+- ❌ Server masih Monolitik : FrontEnd, API, dan BackEnd dalam 1 server
 
 ## C. Struktur File
 ```
