@@ -1,4 +1,5 @@
-# 📚 Perpustakaan Digital - CRUD App
+# nginx loadbalancer dengan database mysql dan s3
+## 📚 Perpustakaan Digital - CRUD App
 
 Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3.
 
