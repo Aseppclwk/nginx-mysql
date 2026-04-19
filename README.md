@@ -27,9 +27,9 @@ kantor-public : 172.16.0.224/28
 3. Instance EC2 : 4 buah
 ````
 lb-kantor-public : ubuntu + nginx : di kantor-public untuk load balancer
-srv-private-1 : ubuntu + node.js : di kantor-private-1
-srv-private-2 : ubuntu + node.js : di kantor-private-2
-db-private-3 : ubuntu + mysql : di kantor-private-3
+srv-kantor-private-1 : ubuntu + node.js : di kantor-private-1
+srv-kantor-private-2 : ubuntu + node.js : di kantor-private-2
+db-kantor-private-3 : ubuntu + mysql : di kantor-private-3
 ````
 
 4. SG : 1 buah
