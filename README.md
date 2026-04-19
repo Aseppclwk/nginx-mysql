@@ -106,7 +106,7 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 S3_BUCKET=your-bucket-name
 ```
 
-### 4. Buat server Database MySQL
+### 4. Buat server Database MySQL (db-kantor-private-3)
 
 UserData untuk membuat server mysql
 
@@ -195,7 +195,7 @@ Buka browser: `http://localhost:3000`
 | DELETE | /api/books/:id | Hapus buku |
 | GET | /api/categories | List kategori |
 
-## F. User Data AWS (EC2)
+## F. User Data AWS (EC2) untuk srv-kantor-private-1 dan srv-kantor-private-2
 
 Untuk deploy otomatis di EC2, tambahkan ke User Data:
 
