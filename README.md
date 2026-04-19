@@ -10,13 +10,13 @@ Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3.
 
 ## Infrastruktur
 
-A.1. VPC
+1. VPC
 ````
 Nama : kantor
 IP : 172.16.0.0/24
 ````
 
-A.2. Subnet : 4 buah 
+2. Subnet : 4 buah 
 ````
 kantor-private-1 : 172.16.0.0/25
 kantor-private-2 : 172.16.0.128/26
@@ -24,7 +24,7 @@ kantor-private-3 : 172.16.0.192/27
 kantor-public : 172.16.0.224/28
 ````
 
-A.3. Instance EC2 : 4 buah
+3. Instance EC2 : 4 buah
 ````
 lb-kantor-public : ubuntu + nginx : di kantor-public untuk load balancer
 srv-private-1 : ubuntu + node.js : di kantor-private-1
@@ -32,20 +32,20 @@ srv-private-2 : ubuntu + node.js : di kantor-private-2
 db-private-3 : ubuntu + mysql : di kantor-private-3
 ````
 
-A.4. SG : 1 buah
+4. SG : 1 buah
 ````
 kantor-sg:
 allow inbound 22(SSH), 80(HTTP), 443(HTTPS), 3306(MySQL), TCP/3000(Node.js), dan ICMP(ping)
 from 0.0.0.0/0
 ````
 
-A.5. IGW : 1 buah
+5. IGW : 1 buah
 ````
 kantor-igw attach ke VPC kantor 
 ````
 
 
-A.6. Route table : 2 buah
+6. Route table : 2 buah
 ````
 kantor-public-rt:
 subnet-associations ke kantor-public
