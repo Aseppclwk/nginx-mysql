@@ -45,11 +45,53 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 S3_BUCKET=your-bucket-name
 ```
 
-### 4. Buat database MySQL
+### 4. Buat server Database MySQL
+
+UserData untuk membuat server mysql
+
 ```sql
-CREATE DATABASE perpustakaan;
+#!/bin/bash
+
+# Update package list
+apt-get update -y
+
+# Install MySQL Server
+apt-get install mysql-server -y
+
+# Start dan enable MySQL
+systemctl start mysql
+systemctl enable mysql
+
+# Set root password dan konfigurasi keamanan
+mysql -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'P4ssw0rd';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+EOF
+
+# Ganti '@localhost' jadi '@%' agar bisa remote
+mysql -u root -p'P4ssw0rd' <<EOF
+CREATE USER 'admin'@'%' IDENTIFIED BY 'admin123';
+GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
+
+# Ubah bind-address ke 0.0.0.0
+sed -i 's/^bind-address\s*=.*/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
+grep -q "^bind-address" /etc/mysql/mysql.conf.d/mysqld.cnf || \
+  echo "bind-address = 0.0.0.0" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+
+# Restart MySQL agar config berlaku
+systemctl restart mysql
+
+# Log selesai
+echo "MySQL installation completed" >> /var/log/user-data.log
 ```
-> Tabel `books` akan dibuat otomatis saat server pertama kali dijalankan.
+
+> Database `perpustakaan` dan Tabel `books` akan dibuat otomatis saat server pertama kali dijalankan.
 
 ### 5. Konfigurasi S3 Bucket
 - Buat S3 bucket di AWS Console
