@@ -1,0 +1,26 @@
+1. Install Node.js
+Download dan install dari https://nodejs.org (pilih versi LTS)
+Cek sudah terinstall:
+
+node -v
+npm -v
+
+2. Extract ZIP & Masuk Folder
+
+cd library-app
+
+3. Install Dependencies
+npm install
+
+4. Buat File .env
+Copy dari template:
+
+copy .env.example .env
+
+Lalu buka .env pakai Notepad dan isi sesuai konfigurasi MySQL & AWS kamu.
+
+5. Jalankan Aplikasi
+npm start
+
+6. Buka Browser
+http://localhost:3000

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perpustakaan Digital</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #111318;
+      --paper: #1A1D24;
+      --ink: #E8E2D5;
+      --ink-muted: #8A8478;
+      --amber: #E8A830;
+      --amber-light: #F5C050;
+      --amber-pale: #2A2210;
+      --rust: #E05530;
+      --sage: #4ADE80;
+      --border: #2E3140;
+      --shadow: rgba(0,0,0,0.4);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── SERVER INFO BAR ── */
+    #server-bar {
+      background: #0D0F13;
+      color: #E8E2D5;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #1E2230;
+    }
+    #server-bar .srv-dot {
+      width: 9px; height: 9px;
+      background: #4ADE80;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px #4ADE80;
+      margin-right: 14px;
+    }
+    #server-bar .srv-dot.err {
+      background: #F87171;
+      box-shadow: 0 0 6px #F87171;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    #server-bar .divider {
+      width: 1px; height: 32px;
+      background: #2E3140;
+      margin: 0 20px;
+      flex-shrink: 0;
+    }
+    #server-bar .info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    #server-bar .info-label {
+      color: #5A6070;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    #server-bar .info-value {
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    #server-bar .db-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1A1D24;
+      border: 1px solid #2E3140;
+      border-radius: 6px;
+      padding: 3px 10px 3px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    #server-bar .db-badge.ok { color: #4ADE80; border-color: #1a3a28; }
+    #server-bar .db-badge.err { color: #F87171; border-color: #3a1a1a; }
+    #server-bar .db-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+    #server-bar .version-tag {
+      margin-left: auto;
+      color: #3A4055;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--paper);
+      border-bottom: 2px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px var(--shadow);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: var(--amber);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .logo h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .logo p { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: var(--amber);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--amber-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,134,26,0.35); }
+    .btn-danger { background: var(--rust); color: white; }
+    .btn-danger:hover { opacity: 0.85; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-muted);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--cream); color: var(--ink); }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-wrap {
+      flex: 1;
+      min-width: 220px;
+      position: relative;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 10px 16px 10px 44px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: var(--amber); }
+    .search-icon {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+    .search-icon svg { width: 18px; height: 18px; display: block; }
+    select.filter-select {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--paper);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+    }
+    select.filter-select:focus { border-color: var(--amber); }
+
+    /* ── STATS ── */
+    .stats {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+    .stat-badge {
+      background: var(--amber-pale);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+    .stat-badge strong { color: var(--amber); font-weight: 600; }
+
+    /* ── BOOK GRID ── */
+    #book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .book-card {
+      background: var(--paper);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .book-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px var(--shadow);
+    }
+    .book-cover {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--amber-pale), var(--cream));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+    }
+    .book-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .book-info { padding: 14px; }
+    .book-category {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .book-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.3;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .book-author { font-size: 12px; color: var(--ink-muted); margin-bottom: 10px; }
+    .book-actions { display: flex; gap: 8px; }
+    .book-actions button {
+      flex: 1;
+      padding: 7px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .btn-edit { background: var(--amber-pale); color: var(--amber); }
+    .btn-edit:hover { background: #3a2c10; }
+    .btn-del { background: #2a1210; color: var(--rust); }
+    .btn-del:hover { background: #3a1a14; }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--ink-muted);
+    }
+    .empty-state .icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-state h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(3px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--paper);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      padding: 24px 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+    }
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--cream);
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--ink-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-close:hover { background: var(--border); }
+    .modal-body { padding: 20px 24px 24px; }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--amber); background: var(--paper); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* Cover Upload */
+    .cover-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover-upload-area:hover { border-color: var(--amber); background: var(--amber-pale); }
+    .cover-upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      padding: 0;
+      border: none;
+      background: none;
+    }
+    .cover-preview {
+      width: 80px;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin: 0 auto 8px;
+      display: none;
+      border: 2px solid var(--border);
+    }
+    .cover-upload-icon { font-size: 28px; margin-bottom: 8px; }
+    .cover-upload-text { font-size: 13px; color: var(--ink-muted); }
+    .cover-upload-text strong { color: var(--amber); }
+
+    /* Form footer */
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--ink);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-left: 4px solid var(--sage); }
+    #toast.error { border-left: 4px solid var(--rust); }
+
+    /* ── LOADER ── */
+    .loader {
+      display: flex;
+      justify-content: center;
+      padding: 60px;
+      grid-column: 1 / -1;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── CONFIRM MODAL ── */
+    .confirm-modal {
+      max-width: 380px;
+      text-align: center;
+      padding: 32px;
+    }
+    .confirm-icon { font-size: 44px; margin-bottom: 16px; }
+    .confirm-modal h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .confirm-modal p { font-size: 14px; color: var(--ink-muted); margin-bottom: 24px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+    @media (max-width: 540px) {
+      .form-grid { grid-template-columns: 1fr; }
+      #book-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+      header { padding: 14px 16px; }
+      main { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SERVER INFO BAR -->
+<div id="server-bar">
+  <div class="srv-dot" id="srv-dot"></div>
+  <div class="info-block">
+    <div class="info-label">HOSTNAME</div>
+    <div class="info-value" id="srv-hostname">—</div>
+  </div>
+  <div class="divider"></div>
+  <div class="info-block">
+    <div class="info-label">IP ADDRESS</div>
+    <div class="info-value" id="srv-ip">—</div>
+  </div>
+  <div class="divider"></div>
+  <div class="info-block">
+    <div class="info-label">DATABASE</div>
+    <div class="info-value">
+      <span class="db-badge" id="db-badge"><span class="db-dot"></span><span id="db-status-text">connecting...</span></span>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="info-block">
+    <div class="info-label">MySQL VERSION</div>
+    <div class="info-value" id="db-version">—</div>
+  </div>
+  <div class="divider"></div>
+  <div class="info-block">
+    <div class="info-label">TOTAL BUKU</div>
+    <div class="info-value" id="db-total">—</div>
+  </div>
+  <div class="version-tag">Perpustakaan Digital v1.0</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📚</div>
+    <div>
+      <h1>Perpustakaan Digital</h1>
+      <p>Sistem Manajemen Koleksi Buku</p>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="openModal()">
+    ＋ Tambah Buku
+  </button>
+</header>
+
+<!-- MAIN -->
+<main>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-muted)"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg></span>
+      <input type="text" id="search-input" placeholder="Cari judul, penulis, atau ISBN..." oninput="debounceSearch()" />
+    </div>
+    <select class="filter-select" id="cat-filter" onchange="loadBooks()">
+      <option value="">Semua Kategori</option>
+    </select>
+  </div>
+
+  <div class="stats">
+    <div class="stat-badge">Total: <strong id="total-count">0</strong> buku</div>
+  </div>
+
+  <div id="book-grid">
+    <div class="loader"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<!-- FORM MODAL -->
+<div class="modal-overlay" id="form-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Tambah Buku Baru</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="book-form" onsubmit="submitForm(event)">
+        <input type="hidden" id="book-id" />
+
+        <!-- Cover Upload -->
+        <div class="form-group full" style="margin-bottom:14px">
+          <label>Cover Buku</label>
+          <div class="cover-upload-area" onclick="document.getElementById('cover-input').click()">
+            <input type="file" id="cover-input" accept="image/jpeg,image/png,image/webp" onchange="previewCover(this)" onclick="event.stopPropagation()" />
+            <img id="cover-preview" class="cover-preview" alt="Preview" />
+            <div class="cover-upload-icon" id="upload-icon">🖼️</div>
+            <div class="cover-upload-text">Klik untuk unggah cover<br><strong>JPG, PNG, WEBP</strong> · Maks 5MB</div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Judul Buku *</label>
+            <input type="text" id="f-title" required placeholder="Masukkan judul buku" />
+          </div>
+          <div class="form-group full">
+            <label>Penulis *</label>
+            <input type="text" id="f-author" required placeholder="Nama penulis" />
+          </div>
+          <div class="form-group">
+            <label>ISBN</label>
+            <input type="text" id="f-isbn" placeholder="978-xxxx-xxxx" />
+          </div>
+          <div class="form-group">
+            <label>Tahun Terbit</label>
+            <input type="number" id="f-year" placeholder="2024" min="1000" max="2099" />
+          </div>
+          <div class="form-group full">
+            <label>Kategori</label>
+            <input type="text" id="f-category" placeholder="Fiksi, Sains, Sejarah, dll." list="cat-list" />
+            <datalist id="cat-list"></datalist>
+          </div>
+          <div class="form-group full">
+            <label>Deskripsi</label>
+            <textarea id="f-desc" placeholder="Ringkasan atau sinopsis buku..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Batal</button>
+          <button type="submit" class="btn btn-primary" id="submit-btn">💾 Simpan Buku</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="confirm-modal">
+      <div class="confirm-icon">🗑️</div>
+      <h3>Hapus Buku?</h3>
+      <p id="confirm-msg">Buku ini akan dihapus permanen beserta foto sampulnya dari S3.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost" onclick="closeConfirm()">Batal</button>
+        <button class="btn btn-danger" id="confirm-ok-btn">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  let searchTimer = null;
+  let editingId = null;
+
+  // ── Server Info ──
+  async function loadServerInfo() {
+    try {
+      const res = await fetch('/api/server-info');
+      const d = await res.json();
+      document.getElementById('srv-hostname').textContent = d.hostname;
+      document.getElementById('srv-ip').textContent = d.ip;
+    } catch {}
+  }
+
+  // ── DB Status ──
+  async function loadDbStatus() {
+    const badge = document.getElementById('db-badge');
+    const txt = document.getElementById('db-status-text');
+    const dot = document.getElementById('srv-dot');
+    try {
+      const res = await fetch('/api/db-status');
+      const d = await res.json();
+      if (d.status === 'connected') {
+        badge.className = 'db-badge ok';
+        txt.textContent = 'CONNECTED';
+        document.getElementById('db-version').textContent = d.version;
+        document.getElementById('db-total').textContent = d.total_books + ' buku';
+      } else {
+        badge.className = 'db-badge err';
+        txt.textContent = 'ERROR';
+        dot.classList.add('err');
+        document.getElementById('db-version').textContent = '—';
+        document.getElementById('db-total').textContent = '—';
+      }
+    } catch {
+      badge.className = 'db-badge err';
+      txt.textContent = 'OFFLINE';
+      dot.classList.add('err');
+    }
+  }
+
+  // ── Toast ──
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 3000);
+  }
+
+  // ── Load Categories ──
+  async function loadCategories() {
+    try {
+      const res = await fetch('/api/categories');
+      const d = await res.json();
+      const sel = document.getElementById('cat-filter');
+      const dl = document.getElementById('cat-list');
+      d.data.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat; opt.textContent = cat;
+        sel.appendChild(opt.cloneNode(true));
+        dl.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  // ── Load Books ──
+  async function loadBooks() {
+    document.getElementById('book-grid').innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+    const search = document.getElementById('search-input').value;
+    const category = document.getElementById('cat-filter').value;
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (category) params.append('category', category);
+    try {
+      const res = await fetch('/api/books?' + params);
+      const d = await res.json();
+      renderBooks(d.data);
+    } catch {
+      showToast('Gagal memuat data buku', 'error');
+      document.getElementById('book-grid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Gagal memuat data</h3><p>Periksa koneksi server</p></div>';
+    }
+  }
+
+  function renderBooks(books) {
+    document.getElementById('total-count').textContent = books.length;
+    const grid = document.getElementById('book-grid');
+    if (!books.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">📭</div><h3>Belum ada buku</h3><p>Tambahkan buku pertama ke perpustakaan</p></div>';
+      return;
+    }
+    grid.innerHTML = books.map(b => `
+      <div class="book-card">
+        <div class="book-cover">
+          ${b.cover_url
+            ? `<img src="${b.cover_url}" alt="${escHtml(b.title)}" onerror="this.parentElement.innerHTML='📖'" />`
+            : '📖'}
+        </div>
+        <div class="book-info">
+          <div class="book-category">${escHtml(b.category || 'Umum')}</div>
+          <div class="book-title">${escHtml(b.title)}</div>
+          <div class="book-author">✍️ ${escHtml(b.author)}</div>
+          <div class="book-actions">
+            <button class="btn-edit" onclick="editBook(${b.id})">✏️ Edit</button>
+            <button class="btn-del" onclick="confirmDelete(${b.id}, '${escHtml(b.title)}')">🗑️ Hapus</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── Search Debounce ──
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadBooks, 400);
+  }
+
+  // ── Modal ──
+  function openModal(data = null) {
+    editingId = data ? data.id : null;
+    document.getElementById('modal-title').textContent = data ? 'Edit Buku' : 'Tambah Buku Baru';
+    document.getElementById('submit-btn').textContent = data ? '💾 Perbarui Buku' : '💾 Simpan Buku';
+    document.getElementById('f-title').value = data?.title || '';
+    document.getElementById('f-author').value = data?.author || '';
+    document.getElementById('f-isbn').value = data?.isbn || '';
+    document.getElementById('f-year').value = data?.year || '';
+    document.getElementById('f-category').value = data?.category || '';
+    document.getElementById('f-desc').value = data?.description || '';
+    document.getElementById('cover-input').value = '';
+    const preview = document.getElementById('cover-preview');
+    if (data?.cover_url) {
+      preview.src = data.cover_url;
+      preview.style.display = 'block';
+      document.getElementById('upload-icon').style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      document.getElementById('upload-icon').style.display = 'block';
+    }
+    document.getElementById('form-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('form-modal').classList.remove('open');
+    editingId = null;
+  }
+
+  async function editBook(id) {
+    try {
+      const res = await fetch(`/api/books/${id}`);
+      const d = await res.json();
+      openModal(d.data);
+    } catch { showToast('Gagal memuat data buku', 'error'); }
+  }
+
+  // ── Preview Cover ──
+  function previewCover(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('cover-preview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('upload-icon').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Submit Form ──
+  async function submitForm(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Menyimpan...';
+
+    const fd = new FormData();
+    fd.append('title', document.getElementById('f-title').value);
+    fd.append('author', document.getElementById('f-author').value);
+    fd.append('isbn', document.getElementById('f-isbn').value);
+    fd.append('year', document.getElementById('f-year').value);
+    fd.append('category', document.getElementById('f-category').value);
+    fd.append('description', document.getElementById('f-desc').value);
+    const file = document.getElementById('cover-input').files[0];
+    if (file) fd.append('cover', file);
+
+    try {
+      const url = editingId ? `/api/books/${editingId}` : '/api/books';
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, { method, body: fd });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.message);
+      showToast(editingId ? '✅ Buku berhasil diperbarui' : '✅ Buku berhasil ditambahkan');
+      closeModal();
+      loadBooks();
+      loadCategories();
+    } catch (err) {
+      showToast('❌ ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingId ? '💾 Perbarui Buku' : '💾 Simpan Buku';
+    }
+  }
+
+  // ── Delete ──
+  let deleteId = null;
+  function confirmDelete(id, title) {
+    deleteId = id;
+    document.getElementById('confirm-msg').textContent = `"${title}" akan dihapus permanen beserta cover dari S3.`;
+    document.getElementById('confirm-modal').classList.add('open');
+    document.getElementById('confirm-ok-btn').onclick = doDelete;
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-modal').classList.remove('open');
+    deleteId = null;
+  }
+  async function doDelete() {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`/api/books/${deleteId}`, { method: 'DELETE' });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.message);
+      showToast('🗑️ Buku berhasil dihapus');
+      closeConfirm();
+      loadBooks();
+    } catch (err) {
+      showToast('❌ ' + err.message, 'error');
+    }
+  }
+
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) { closeModal(); closeConfirm(); } });
+  });
+
+  // ── Init ──
+  loadServerInfo();
+  loadDbStatus();
+  loadCategories();
+  loadBooks();
+</script>
+</body>
+</html>
