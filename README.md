@@ -28,7 +28,7 @@ kantor-public : 172.16.0.224/28
 ````
 srv-kantor-private-1 : ubuntu + node.js : di subnet kantor-private-1
 srv-kantor-private-2 : ubuntu + node.js : di subnet kantor-private-2
-db-kantor-private-3 : ubuntu + mysql : di subnet kantor-private-3
+db-kantor-private-3 : ubuntu + mysql : di subnet kantor-private-3 untuk database MySQL
 lb-kantor-public : ubuntu + nginx : di subnet kantor-public untuk load balancer
 ````
 
