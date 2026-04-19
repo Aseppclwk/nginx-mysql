@@ -4,7 +4,7 @@
 Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3.
 
 ---
-![Infra](/image/nginx_loadbalancer_mysql_s3-libraryapp.drawio-dark.png)
+![Infra](/image/dark-nginx_loadbalancer_mysql_s3-libraryapp.drawio.png)
 
 ---
 
