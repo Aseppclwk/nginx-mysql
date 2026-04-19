@@ -2,6 +2,11 @@
 
 Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3.
 
+---
+![Infra](/image/nginx_loadbalancer_mysql_s3-libraryapp.drawio-dark.png)
+
+---
+
 ## Fitur
 - ✅ CRUD buku (Create, Read, Update, Delete)
 - ✅ Upload cover buku ke AWS S3
@@ -36,8 +41,8 @@ cp .env.example .env
 ```env
 PORT=3000
 DB_HOST=your-mysql-host
-DB_USER=appuser
-DB_PASSWORD=AppPassword123!
+DB_USER=admin
+DB_PASSWORD=admin123
 DB_NAME=perpustakaan
 AWS_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=your-access-key
