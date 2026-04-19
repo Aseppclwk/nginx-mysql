@@ -111,7 +111,7 @@ S3_BUCKET=your-bucket-name
 
 Buat server database MySQL db-kantor-private-3 yang ada di subnet kantor-private-3.
 
-UserData untuk membuat server mysql
+Berikut adalah UserData untuk membuat server mysql tersebut:
 
 username : admin / password : admin123
 
