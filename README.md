@@ -1,7 +1,7 @@
 # nginx loadbalancer dengan database mysql dan s3
 ## 📚 Perpustakaan Digital - CRUD App
 
-Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3.
+Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3, dengan loadbalancer nginX
 
 ---
 ![Infra](/image/dark-nginx_loadbalancer_mysql_s3-libraryapp.drawio.png)
