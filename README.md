@@ -8,7 +8,7 @@ Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3.
 
 ---
 
-## Infrastruktur
+## A. Infrastruktur
 
 1. VPC
 ````
@@ -63,14 +63,14 @@ subnet-associations ke kantor-private-1, kantor-private-2, kantor-private-3
 
 
 
-## Fitur
+## B. Fitur
 - ✅ CRUD buku (Create, Read, Update, Delete)
 - ✅ Upload cover buku ke AWS S3
 - ✅ Tampil hostname & IP server di header
 - ✅ Search & filter berdasarkan kategori
 - ✅ Responsive UI
 
-## Struktur File
+## C. Struktur File
 ```
 library-app/
 ├── server.js          # Backend Express API
@@ -80,7 +80,7 @@ library-app/
     └── index.html     # Frontend SPA
 ```
 
-## Cara Install & Jalankan
+## D. Cara Install & Jalankan
 
 ### 1. Install dependencies
 ```bash
@@ -183,7 +183,7 @@ npm run dev
 
 Buka browser: `http://localhost:3000`
 
-## API Endpoints
+## E. API Endpoints
 
 | Method | Endpoint | Keterangan |
 |--------|----------|------------|
@@ -195,7 +195,7 @@ Buka browser: `http://localhost:3000`
 | DELETE | /api/books/:id | Hapus buku |
 | GET | /api/categories | List kategori |
 
-## User Data AWS (EC2)
+## F. User Data AWS (EC2)
 
 Untuk deploy otomatis di EC2, tambahkan ke User Data:
 
