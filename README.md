@@ -148,8 +148,8 @@ npm install
 cat > .env <<EOF
 PORT=3000
 DB_HOST=YOUR_DB_HOST
-DB_USER=appuser
-DB_PASSWORD=AppPassword123!
+DB_USER=admin
+DB_PASSWORD=admin123
 DB_NAME=perpustakaan
 AWS_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=YOUR_KEY
