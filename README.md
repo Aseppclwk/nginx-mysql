@@ -54,7 +54,7 @@ S3_BUCKET=your-bucket-name
 
 UserData untuk membuat server mysql
 
-Username : admin / Password : admin123
+username : admin / password : admin123
 
 ```sql
 #!/bin/bash
