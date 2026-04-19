@@ -148,7 +148,7 @@ Untuk deploy otomatis di EC2, tambahkan ke User Data:
 apt-get update -y
 apt-get install -y nodejs npm git
 
-git clone https://github.com/username/library-app.git /app
+git clone https://github.com/paknux/nginx_loadbalancer_mysql_s3-libraryapp.git /app
 cd /app
 npm install
 
