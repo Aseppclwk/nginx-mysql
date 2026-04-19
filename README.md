@@ -1,7 +1,7 @@
-# nginx loadbalancer dengan database mysql dan s3
+# Nginx loadbalancer dengan database MySQL dan S3
 ## 📚 Perpustakaan Digital - CRUD App
 
-Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3, dengan loadbalancer nginX
+Aplikasi manajemen perpustakaan berbasis Node.js + MySQL + AWS S3, dengan loadbalancer Nginx
 
 ---
 ![Infra](/image/dark-nginx_loadbalancer_mysql_s3-libraryapp.drawio.png)
@@ -29,7 +29,7 @@ kantor-public : 172.16.0.224/28
 srv-kantor-private-1 : ubuntu + node.js : di subnet kantor-private-1
 srv-kantor-private-2 : ubuntu + node.js : di subnet kantor-private-2
 db-kantor-private-3 : ubuntu + mysql : di subnet kantor-private-3 untuk database MySQL
-lb-kantor-public : ubuntu + nginx : di subnet kantor-public untuk load balancer
+lb-kantor-public : ubuntu + Nginx : di subnet kantor-public untuk load balancer
 ````
 
 4. SG : 1 buah
