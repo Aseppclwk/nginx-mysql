@@ -10,32 +10,45 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Middleware ───────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// ─── Multer (memory storage, upload to S3) ───────────────────
+// ─── Multer ───────────────────────────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Only JPG, PNG, WEBP allowed'));
+    allowed.includes(file.mimetype)
+      ? cb(null, true)
+      : cb(new Error('Only JPG, PNG, WEBP allowed'));
   }
 });
 
-// ─── S3 Client ───────────────────────────────────────────────
+// ─── S3 Client dengan timeout eksplisit ──────────────────────
+// FIX #1: Tambahkan requestHandler dengan timeout
+// Tanpa ini, upload ke S3 bisa hang selamanya tanpa error
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
+
 const s3 = new S3Client({
-  region: process.env.AWS_REGION || 'ap-southeast-1',
+  region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    sessionToken: process.env.AWS_SESSION_TOKEN,
-  }
+    ...(process.env.AWS_SESSION_TOKEN && {
+      sessionToken: process.env.AWS_SESSION_TOKEN
+    }),
+  },
+  // FIX #1: Timeout 15 detik — kalau S3 tidak respond, langsung throw error
+  requestHandler: new NodeHttpHandler({
+    connectionTimeout: 5000,   // 5 detik untuk koneksi
+    socketTimeout: 15000,      // 15 detik untuk transfer
+  }),
+  maxAttempts: 2, // Retry 1x sebelum menyerah
 });
 
-// ─── MySQL Pool (tanpa database dulu, untuk bisa CREATE DATABASE) ────────────
+// ─── MySQL Pool ───────────────────────────────────────────────
 const poolNoDB = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -53,16 +66,16 @@ const pool = mysql.createPool({
   connectionLimit: 10,
 });
 
-// ─── Init DB: buat database & tabel jika belum ada ───────────────────────────
+// ─── Init DB ──────────────────────────────────────────────────
 async function initDB() {
-  // Buat database perpustakaan jika belum ada
   const connNoDB = await poolNoDB.getConnection();
   const dbName = process.env.DB_NAME || 'perpustakaan';
-  await connNoDB.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await connNoDB.execute(
+    `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+  );
   connNoDB.release();
   console.log(`✅ Database '${dbName}' siap`);
 
-  // Buat tabel books jika belum ada
   const conn = await pool.getConnection();
   await conn.execute(`
     CREATE TABLE IF NOT EXISTS books (
@@ -98,46 +111,123 @@ function getServerInfo() {
   return { hostname: os.hostname(), ip };
 }
 
-// ─── S3 Upload Helper ─────────────────────────────────────────
+// ─── S3 Helpers ───────────────────────────────────────────────
+// FIX #2: uploadToS3 sekarang throw error dengan pesan yang jelas
 async function uploadToS3(file) {
-  const ext = path.extname(file.originalname);
+  const ext = path.extname(file.originalname) || '.jpg';
   const key = `books/${uuidv4()}${ext}`;
-  await s3.send(new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET,
-    Key: key,
-    Body: file.buffer,
-    ContentType: file.mimetype,
-  }));
-  const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
+
+  console.log(`📤 Uploading to S3: bucket=${process.env.S3_BUCKET}, key=${key}`);
+
+  try {
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
+  } catch (err) {
+    // Log detail error S3 untuk debugging
+    console.error('❌ S3 Upload Error:', {
+      message: err.message,
+      code: err.Code || err.code,
+      statusCode: err.$metadata?.httpStatusCode,
+      requestId: err.$metadata?.requestId,
+    });
+    // Re-throw dengan pesan yang lebih informatif
+    throw new Error(`S3 upload gagal: ${err.message}`);
+  }
+
+  const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`;
+  console.log(`✅ S3 Upload sukses: ${url}`);
   return { key, url };
 }
 
 async function deleteFromS3(key) {
   if (!key) return;
-  await s3.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
+  try {
+    await s3.send(new DeleteObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: key
+    }));
+    console.log(`🗑️ S3 Delete sukses: ${key}`);
+  } catch (err) {
+    // Jangan crash app kalau delete gagal — hanya log
+    console.error(`⚠️ S3 Delete gagal (key: ${key}):`, err.message);
+  }
+}
+
+// ─── FIX #3: Global error handler untuk Multer ───────────────
+// Multer errors (file terlalu besar, tipe salah) tidak otomatis
+// ditangkap oleh try/catch biasa — perlu middleware khusus
+function handleUpload(req, res, next) {
+  upload.single('cover')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({
+        success: false,
+        message: `Upload error: ${err.message}` // e.g. "File too large"
+      });
+    } else if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message // e.g. "Only JPG, PNG, WEBP allowed"
+      });
+    }
+    next();
+  });
 }
 
 // ─── API Routes ───────────────────────────────────────────────
 
-// GET server info
 app.get('/api/server-info', (req, res) => {
   res.json(getServerInfo());
 });
 
-// GET db status
 app.get('/api/db-status', async (req, res) => {
   try {
     const conn = await pool.getConnection();
     const [[row]] = await conn.execute('SELECT VERSION() AS version, NOW() AS now');
     const [[tbl]] = await conn.execute('SELECT COUNT(*) AS total FROM books');
     conn.release();
-    res.json({ status: 'connected', version: row.version, time: row.now, total_books: tbl.total });
+    res.json({
+      status: 'connected',
+      version: row.version,
+      time: row.now,
+      total_books: tbl.total
+    });
   } catch (e) {
     res.json({ status: 'error', message: e.message });
   }
 });
 
-// GET all books
+// FIX #4: Endpoint khusus untuk test koneksi S3
+// Gunakan ini dulu sebelum test upload file sungguhan
+app.get('/api/s3-status', async (req, res) => {
+  try {
+    const { HeadBucketCommand } = require('@aws-sdk/client-s3');
+    await s3.send(new HeadBucketCommand({ Bucket: process.env.S3_BUCKET }));
+    res.json({
+      success: true,
+      message: 'S3 bucket accessible',
+      bucket: process.env.S3_BUCKET,
+      region: process.env.AWS_REGION,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'S3 tidak bisa diakses',
+      error: err.message,
+      code: err.Code || err.code,
+      statusCode: err.$metadata?.httpStatusCode,
+      hint: err.$metadata?.httpStatusCode === 403
+        ? 'Credentials expired atau IAM permission kurang'
+        : err.$metadata?.httpStatusCode === 404
+        ? 'Bucket tidak ditemukan atau region salah'
+        : 'Cek NAT instance dan koneksi internet dari private subnet',
+    });
+  }
+});
+
 app.get('/api/books', async (req, res) => {
   try {
     const { search, category } = req.query;
@@ -159,7 +249,6 @@ app.get('/api/books', async (req, res) => {
   }
 });
 
-// GET single book
 app.get('/api/books/:id', async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM books WHERE id = ?', [req.params.id]);
@@ -170,14 +259,18 @@ app.get('/api/books/:id', async (req, res) => {
   }
 });
 
-// POST create book
-app.post('/api/books', upload.single('cover'), async (req, res) => {
+// FIX #3 diterapkan: pakai handleUpload, bukan upload.single() langsung
+app.post('/api/books', handleUpload, async (req, res) => {
   try {
     const { title, author, isbn, category, year, description } = req.body;
-    if (!title || !author) return res.status(400).json({ success: false, message: 'Title and author required' });
+    if (!title || !author) {
+      return res.status(400).json({ success: false, message: 'Title dan author wajib diisi' });
+    }
 
     let cover_url = null, cover_key = null;
+
     if (req.file) {
+      // FIX #2: Error S3 sekarang ter-catch dan dikembalikan sebagai JSON
       const s3Result = await uploadToS3(req.file);
       cover_url = s3Result.url;
       cover_key = s3Result.key;
@@ -189,13 +282,15 @@ app.post('/api/books', upload.single('cover'), async (req, res) => {
     );
     const [rows] = await pool.execute('SELECT * FROM books WHERE id = ?', [result.insertId]);
     res.status(201).json({ success: true, data: rows[0] });
+
   } catch (err) {
+    console.error('❌ POST /api/books error:', err.message);
+    // FIX: Selalu kembalikan JSON, bukan HTML error page
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// PUT update book
-app.put('/api/books/:id', upload.single('cover'), async (req, res) => {
+app.put('/api/books/:id', handleUpload, async (req, res) => {
   try {
     const [existing] = await pool.execute('SELECT * FROM books WHERE id = ?', [req.params.id]);
     if (!existing.length) return res.status(404).json({ success: false, message: 'Book not found' });
@@ -216,12 +311,13 @@ app.put('/api/books/:id', upload.single('cover'), async (req, res) => {
     );
     const [rows] = await pool.execute('SELECT * FROM books WHERE id = ?', [req.params.id]);
     res.json({ success: true, data: rows[0] });
+
   } catch (err) {
+    console.error('❌ PUT /api/books error:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// DELETE book
 app.delete('/api/books/:id', async (req, res) => {
   try {
     const [existing] = await pool.execute('SELECT * FROM books WHERE id = ?', [req.params.id]);
@@ -234,14 +330,26 @@ app.delete('/api/books/:id', async (req, res) => {
   }
 });
 
-// GET categories
 app.get('/api/categories', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT DISTINCT category FROM books WHERE category IS NOT NULL ORDER BY category');
+    const [rows] = await pool.execute(
+      'SELECT DISTINCT category FROM books WHERE category IS NOT NULL ORDER BY category'
+    );
     res.json({ success: true, data: rows.map(r => r.category) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
+});
+
+// ─── FIX #5: Global fallback error handler ───────────────────
+// Ini menangkap SEMUA error yang tidak ter-catch di route manapun
+// dan memastikan response selalu JSON, bukan HTML
+app.use((err, req, res, next) => {
+  console.error('🔥 Unhandled error:', err.message);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Internal server error',
+  });
 });
 
 // ─── Start ────────────────────────────────────────────────────
@@ -250,6 +358,7 @@ initDB().then(() => {
     const { hostname, ip } = getServerInfo();
     console.log(`🚀 Server running on http://${ip}:${PORT}`);
     console.log(`📦 Hostname: ${hostname}`);
+    console.log(`🪣 S3 Bucket: ${process.env.S3_BUCKET} (${process.env.AWS_REGION})`);
   });
 }).catch(err => {
   console.error('❌ DB init failed:', err.message);
